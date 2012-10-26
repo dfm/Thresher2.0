@@ -1,0 +1,5 @@
+.DS_Store
+*.o
+thresher
+.syntastic_cpp_config
+img.txt
