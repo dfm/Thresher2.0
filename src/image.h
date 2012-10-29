@@ -2,7 +2,13 @@
 #define THRESHER_IMAGE_H
 
 
+#include <iostream>
+
 #include <Eigen/Dense>
+#include <complex>
+#include <fftw3.h>
+
+#include "ceres/ceres.h"
 
 
 using namespace Eigen;
@@ -80,7 +86,25 @@ namespace Thresher {
 
     };
 
-    class ThreshCostFunction {
+    /* template <typename T> */
+    /* int fftconvolve(const double *a, int *da, const T *b, int *db, T *out) { */
+    /*     fftw_complex *a2 = (fftw_complex*) fftw_malloc(da[0] * da[1] * sizeof(fftw_complex)); */
+    /*     T *a0 = (T*) fftw_malloc(da[0] * da[1] * sizeof(T)); */
+    /*     for (int i = 0; i < da[0] * da[1]; ++i) */
+    /*         a0[i] = a[i]; */
+
+    /*     fftw_plan p = fftw_plan_dft_r2c_2d(da[0], da[1], a0, a2, FFTW_ESTIMATE); */
+    /*     /1* fftw_plan p2 = fftw_plan_dft_c2r_2d(da[0], da[1], a2, a, FFTW_ESTIMATE); *1/ */
+
+    /*     fftw_execute(p); */
+
+    /*     fftw_destroy_plan(p); */
+    /*     fftw_free(a2); */
+
+    /*     return 0; */
+    /* }; */
+
+    class ThreshCostFunction : public ceres::CostFunction {
 
         public:
 
@@ -88,21 +112,44 @@ namespace Thresher {
                 : data_(data),
                   psf_(givenpsf),
                   width_(data.rows()),
-                  height_(data.cols()) {};
+                  height_(data.cols())
+            {
+                set_num_residuals(width_ * height_);
+                mutable_parameter_block_sizes()->push_back(width_ * height_);
+            };
 
-            template <typename T> bool operator () (const T* const scene, T* e) const {
+            bool Evaluate(double const* const* parameters,
+                          double* residuals,
+                          double** jacobians) const
+            {
+
+                const double *scene = parameters[0];
 
                 int hw = (psf_.rows() - 1) / 2, dim = width_ * height_;
+                int pd[] = {psf_.rows(), psf_.cols()},
+                    sd[] = {width_, height_};
 
                 for (int i = 0, n = 0; i < width_; ++i)
                     for (int j = 0; j < height_; ++j, ++n)
-                        e[n] = T(data_(i, j));
+                        residuals[n] = data_(i, j);
 
                 for (int i = 0, n = 0; i < width_; ++i)
                     for (int j = 0; j < height_; ++j, ++n)
                         for (int x = fmax(0, i - hw), xi = x - i + hw; x < fmin(width_, i + hw + 1); ++x, ++xi)
                             for (int y = fmax(0, j - hw), yi = y - j + hw; y < fmin(height_, j + hw + 1); ++y, ++yi)
-                                e[n] -= scene[x * height_ + y] * T(psf_(xi, yi));
+                                residuals[n] -= scene[x * height_ + y] * psf_(xi, yi);
+
+                if (jacobians != NULL && jacobians[0] != NULL) {
+                    for (int i = 0; i < width_ * height_; ++i)
+                        for (int j = 0; j < width_ * height_; ++j)
+                            jacobians[0][i * width_ * height_ + j] = 0.0;
+
+                    for (int i = 0, n = 0; i < width_; ++i)
+                        for (int j = 0; j < height_; ++j, ++n)
+                            for (int x = fmax(0, i - hw), xi = x - i + hw; x < fmin(width_, i + hw + 1); ++x, ++xi)
+                                for (int y = fmax(0, j - hw), yi = y - j + hw; y < fmin(height_, j + hw + 1); ++y, ++yi)
+                                    jacobians[0][n * width_ * height_ + x * height_ + y] = -psf_(xi, yi);
+                }
 
                 return true;
 

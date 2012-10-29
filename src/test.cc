@@ -1,39 +1,47 @@
 #include <iostream>
 #include "image.h"
-#include "ceres/ceres.h"
 
 
 using namespace Thresher;
 
 
+using std::cout;
+using std::endl;
+
+using ceres::Problem;
+using ceres::AutoDiffCostFunction;
+using ceres::Solver;
+using ceres::Solve;
+
+
 int main()
 {
+    const int width = 11, height = 11;
+    const int dim = width * height;
+
     PSF psf = gaussianPSF(6, 2);
 
-    Scene<double> scene(11, 11);
+    Scene<double> scene(width, height);
     scene(2, 5, 1.0);
     scene(6, 6, 2.0);
     MatrixXd img = scene.render(psf);
 
     MatrixXd p0 = MatrixXd::Zero(img.rows(), img.cols());
 
-    int dim = img.rows() * img.cols();
+    Problem p;
+    p.AddResidualBlock(new ThreshCostFunction(img, psf.values()), NULL,
+                        &p0(0));
 
-    ceres::Problem p;
-    p.AddResidualBlock(
-            new ceres::AutoDiffCostFunction<ThreshCostFunction, 121, 121>(
-                                new ThreshCostFunction(img, psf.values())), NULL,
-                                &p0(0));
-
-    ceres::Solver::Options options;
+    Solver::Options options;
     options.max_num_iterations = 25;
     options.linear_solver_type = ceres::DENSE_QR;
     options.minimizer_progress_to_stdout = false;  // true;
 
-    ceres::Solver::Summary summary;
-    ceres::Solve(options, &p, &summary);
-    /* std::cout << summary.BriefReport() << "\n"; */
-    std::cout << p0 << std::endl;
+    Solver::Summary summary;
+    Solve(options, &p, &summary);
+
+    /* cout << summary.BriefReport() << endl; */
+    cout << p0 << endl;
 
     return 0;
 }
