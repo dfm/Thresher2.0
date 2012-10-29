@@ -75,10 +75,8 @@ INCLUDE_DIRECTORIES (include
                      ${CERES_INCLUDE})
 
 SET (THRESHER_SRC
-     src/test.cc)
-
-SET (THRESHER_HDR
-     src/image.h)
+     src/test.cc
+     src/thresher.cc)
 
 SET (THRESHER_EXE
      ${THRESHER_SRC}

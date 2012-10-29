@@ -1,5 +1,5 @@
 #include <iostream>
-#include "image.h"
+#include "thresher/thresher.h"
 
 
 using namespace Thresher;
