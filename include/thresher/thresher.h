@@ -1,107 +1,85 @@
-#ifndef THRESHER_IMAGE_H
-#define THRESHER_IMAGE_H
+#ifndef THRESHER_H
+#define THRESHER_H
 
 
 #include <iostream>
+#include <cmath>
 
 #include <Eigen/Dense>
 #include <complex>
-/* #include <fftw3.h> */
+#include <fftw3.h>
 
 #include "ceres/ceres.h"
 
 
 using namespace Eigen;
+using std::cout;
 
 
 namespace Thresher {
 
-    class PSF {
+    // =====================================================================
+    //                                                                ERRORS
+    // =====================================================================
 
-        public:
+    const int DimensionMismatch = -1;
+    const int FITSError = -2;
+    const int ConvolutionError = -3;
 
-            PSF(MatrixXd values)
-                : halfwidth_((values.rows() - 1) / 2),
-                  values_(values) {};
 
-            int halfwidth() const { return halfwidth_; };
-            MatrixXd values() const { return values_; };
+    // =====================================================================
+    //                                             DATA MANIPULATION HELPERS
+    // =====================================================================
 
-            double operator () (int i, int j) const { return values_(i, j); };
+    MatrixXd optimalPSF(MatrixXd scene, MatrixXd data, int psf_hw);
+    MatrixXd fftconvolve(MatrixXd data, MatrixXd kernel);
 
-        private:
 
-            const int halfwidth_;
-            const MatrixXd values_;
-
-    };
-
-    // A Shortcut for building a Gaussian PSF.
-    PSF gaussianPSF(int hw, double var);
-
-    template <typename T> class Scene {
-
-        public:
-
-            Scene(int width, int height) {
-                width_ = width;
-                height_ = height;
-                values_ = MatrixXd::Zero(width, height);
-            };
-            Scene(MatrixXd img) {
-                width_ = img.rows();
-                height_ = img.cols();
-                values_ = img;
-            };
-
-            MatrixXd values() { return values_; };
-            void values(MatrixXd newValues) { values_ = newValues; };
-
-            double operator () (int i, int j) const { return values_(i, j); };
-            void operator () (int i, int j, double val) { values_(i, j) = val; };
-
-            Matrix<T, Dynamic, Dynamic> render(PSF psf) {
-                Matrix<T, Dynamic, Dynamic> img = Matrix<T, Dynamic, Dynamic>::Zero(width_, height_);
-                int hw = psf.halfwidth();
-                for (int i = 0; i < width_; ++i)
-                    for (int j = 0; j < height_; ++j)
-                        for (int x = fmax(0, i - hw), xi = x - i + hw; x < fmin(width_, i + hw + 1); ++x, ++xi)
-                            for (int y = fmax(0, j - hw), yi = y - j + hw; y < fmin(height_, j + hw + 1); ++y, ++yi)
-                                img(i, j) += values_(x, y) * T(psf(xi, yi));
-                return img;
-            };
-
-        private:
-
-            int width_, height_;
-            Matrix<double, Dynamic, Dynamic> values_;
-
-    };
+    // =====================================================================
+    //                                             CERES-STYLE COST FUNCTION
+    // =====================================================================
 
     class ThreshCostFunction : public ceres::CostFunction {
 
         public:
 
-            ThreshCostFunction(MatrixXd data, MatrixXd givenpsf)
+            ThreshCostFunction(MatrixXd data, int psf_hw)
                 : data_(data),
-                  psf_(givenpsf),
+                  psf_hw_(psf_hw),
                   width_(data.rows()),
                   height_(data.cols())
             {
                 set_num_residuals(width_ * height_);
-                mutable_parameter_block_sizes()->push_back(width_ * height_);
+
+                // Scene parameter block.
+                mutable_parameter_block_sizes()->push_back((width_ + 2 * psf_hw) * (height_ + 2 * psf_hw));
+
+                // PSF parameter block.
+                int p = 2 * psf_hw + 1;
+                mutable_parameter_block_sizes()->push_back(p * p);
+
+                // Sky parameter block.
+                mutable_parameter_block_sizes()->push_back(1);
             };
 
-            bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const;
+            bool Evaluate(double const* const* parameters,
+                          double* residuals,
+                          double** jacobians) const;
 
         private:
 
-            const int width_, height_;
+            const int width_, height_, psf_hw_;
             const MatrixXd data_;
-            const MatrixXd psf_;
 
     };
 
+
+    // =====================================================================
+    //                                                        FITSIO HELPERS
+    // =====================================================================
+
+    MatrixXd readImage(const char *fn);
+
 };
 
-#endif
+#endif // THRESHER_H
