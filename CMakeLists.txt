@@ -122,34 +122,6 @@ MESSAGE("-- Found Gflags header in: ${GFLAGS_INCLUDE}")
 
 
 # ==========================================================================
-#                                                                     FFTW 3
-# ==========================================================================
-
-MESSAGE("-- Check for FFTW 3")
-
-SET (FFTW_SEARCH_LIBS ${SEARCH_LIBS})
-LIST (APPEND FFTW_SEARCH_LIBS /usr/lib/fftw3)
-LIST (APPEND FFTW_SEARCH_LIBS /usr/local/lib/fftw3)
-LIST (APPEND FFTW_SEARCH_LIBS /usr/local/homebrew/lib/fftw3)
-FIND_LIBRARY(FFTW_LIB NAMES fftw3 PATHS ${FFTW_SEARCH_LIBS})
-IF (NOT EXISTS ${FFTW_LIB})
-    MESSAGE(FATAL_ERROR "Can't find FFTW 3 library. Try passing -DFFTW_LIB=...")
-ENDIF (NOT EXISTS ${FFTW_LIB})
-LIST (APPEND THRESHER_DEPS ${FFTW_LIB})
-MESSAGE("-- Found FFTW 3 library: ${FFTW_LIB}")
-
-SET (FFTW_SEARCH_HEADERS ${SEARCH_HEADERS})
-LIST (APPEND FFTW_SEARCH_HEADERS /usr/include/fftw3)
-LIST (APPEND FFTW_SEARCH_HEADERS /usr/local/include/fftw3)
-LIST (APPEND FFTW_SEARCH_HEADERS /usr/local/homebrew/include/fftw3)
-FIND_PATH(FFTW_INCLUDE NAMES fftw3.h PATHS ${FFTW_SEARCH_HEADERS})
-IF (NOT EXISTS ${FFTW_INCLUDE})
-    MESSAGE(FATAL_ERROR "Can't find FFTW 3 header. Please specify: -DFFTW_INCLUDE=...")
-ENDIF (NOT EXISTS ${FFTW_INCLUDE})
-MESSAGE("-- Found FFTW 3 header in: ${FFTW_INCLUDE}")
-
-
-# ==========================================================================
 #                                                            THE EXECUTABLES
 # ==========================================================================
 
