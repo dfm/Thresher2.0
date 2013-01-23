@@ -134,13 +134,13 @@ INCLUDE_DIRECTORIES (include
 
 
 # ./thresh
-SET (THRESHER_SRC
-     src/fits.cc
-     src/thresher.cc
-     src/thresh.cc)
-
-ADD_EXECUTABLE (thresh ${THRESHER_SRC})
-TARGET_LINK_LIBRARIES (thresh ${THRESHER_DEPS})
+# SET (THRESHER_SRC
+#      src/fits.cc
+#      src/thresher.cc
+#      src/thresh.cc)
+#
+# ADD_EXECUTABLE (thresh ${THRESHER_SRC})
+# TARGET_LINK_LIBRARIES (thresh ${THRESHER_DEPS})
 
 # ./lucky
 SET (LUCKY_SRC
@@ -152,4 +152,5 @@ ADD_EXECUTABLE (lucky ${LUCKY_SRC})
 TARGET_LINK_LIBRARIES (lucky ${THRESHER_DEPS})
 
 # Installation
-INSTALL (TARGETS thresh lucky DESTINATION bin)
+INSTALL (TARGETS lucky DESTINATION bin)
+# INSTALL (TARGETS thresh lucky DESTINATION bin)

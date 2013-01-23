@@ -7,7 +7,6 @@
 
 #include <Eigen/Dense>
 #include <complex>
-#include <fftw3.h>
 
 #include "ceres/ceres.h"
 
@@ -32,7 +31,7 @@ namespace Thresher {
     // =====================================================================
 
     MatrixXd optimalPSF(MatrixXd scene, MatrixXd data, int psf_hw);
-    MatrixXd fftconvolve(MatrixXd data, MatrixXd kernel);
+    MatrixXd convolve(MatrixXd data, MatrixXd kernel);
 
 
     // =====================================================================
@@ -46,13 +45,14 @@ namespace Thresher {
             ThreshCostFunction(MatrixXd data, int psf_hw)
                 : data_(data),
                   psf_hw_(psf_hw),
-                  width_(data.rows()),
-                  height_(data.cols())
+                  height_(data.rows()),
+                  width_(data.cols())
             {
                 set_num_residuals(width_ * height_);
 
                 // Scene parameter block.
-                mutable_parameter_block_sizes()->push_back((width_ + 2 * psf_hw) * (height_ + 2 * psf_hw));
+                mutable_parameter_block_sizes()->push_back(
+                            (width_ + 2 * psf_hw) * (height_ + 2 * psf_hw));
 
                 // PSF parameter block.
                 int p = 2 * psf_hw + 1;
@@ -79,6 +79,10 @@ namespace Thresher {
     // =====================================================================
 
     MatrixXd readImage(const char *fn);
+    void writeImage(const char *fn, MatrixXd data);
+    void appendLuckyMetadata(const char *fn,
+                             MatrixXi dim_min, MatrixXi dim_max,
+                             VectorXd ranks, std::vector<std::string> fns);
 
 };
 

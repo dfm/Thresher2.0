@@ -123,53 +123,24 @@ int imax(int a, int b) {
     return b;
 }
 
-MatrixXd Thresher::fftconvolve(MatrixXd data, MatrixXd kernel)
+MatrixXd Thresher::convolve(MatrixXd data, MatrixXd kernel)
 {
     int dh = data.rows(), dw = data.cols(),
         kh = kernel.rows(), kw = kernel.cols(),
-        ky = floor(0.5 * (kh - 1)), kx = floor(0.5 * (kw - 1));
+        kx = floor(0.5 * (kh - 1)), ky = floor(0.5 * (kw - 1));
 
-    if (kh >= dh || kw >= dw) {
+    if ((kh - 1) % 2 != 0 || (kw - 1) % 2 != 0 || kh >= dh || kw >= dw)
         throw ConvolutionError;
-    }
 
-    // Pad out the kernel to match the data.
-    MatrixXd padded = MatrixXd::Zero(dh, dw);
+    int rx = dh - 2 * kx,
+        ry = dw - 2 * ky;
+    MatrixXd result = MatrixXd::Zero(rx, ry);
 
-    padded.block(dh - kx - 1, dw - ky - 1, kx, ky) = kernel.block(0, 0, kx, ky);
-    padded.block(0, 0, kh - kx, kw - ky) = kernel.block(kx, ky, kh - kx, kw - ky);
-    padded.block(dh - kx - 1, 0, kx, kw - ky) = kernel.block(0, ky, kx, kw - ky);
-    padded.block(0, dw - ky - 1, kh - kx, ky) = kernel.block(kx, 0, kh - kx, ky);
+    for (int ix = 0; ix < rx; ++ix)
+        for (int iy = 0; iy < ry; ++iy)
+            for (int dx = 0; dx < kh; ++ dx)
+                for (int dy = 0; dy < kw; ++ dy)
+                    result(ix, iy) += data(ix + dx, iy + dy) * kernel(dx, dy);
 
-    /* int na = a.rows() * floor(0.5 * a.cols() + 1), */
-    /*     nb = b.rows() * floor(0.5 * b.cols() + 1), */
-    /*     nx = imax(a.rows(), b.rows()), */
-    /*     ny = imax(a.cols(), b.cols()), */
-    /*     nmx = nx * floor(0.5 * ny + 1); */
-
-    /* MatrixXd result( */
-
-    /* fftw_complex *fa = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * na), */
-    /*              *fb = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nb), */
-    /*              *mid = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nmx); */
-
-    /* fftw_plan pa = fftw_plan_dft_r2c_2d(a.rows(), a.cols(), */
-    /*                                     &(a(0)), fa, FFTW_ESTIMATE), */
-    /*           pb = fftw_plan_dft_r2c_2d(b.rows(), b.cols(), */
-    /*                                     &(b(0)), fb, FFTW_ESTIMATE), */
-    /*           pb = fftw_plan_dft_r2c_2d(b.rows(), b.cols(), */
-    /*                                     &(b(0)), fb, FFTW_ESTIMATE); */
-
-    /* fftw_execute(pa); */
-    /* fftw_execute(pb); */
-
-
-
-    /* fftw_destroy_plan(pa); */
-    /* fftw_destroy_plan(pb); */
-    /* fftw_destroy_plan(pinv); */
-
-    /* fftw_free(fa); */
-    /* fftw_free(fb); */
-    /* fftw_free(mid); */
+    return result;
 }

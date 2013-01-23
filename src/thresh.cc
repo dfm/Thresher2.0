@@ -24,6 +24,19 @@ DEFINE_string(i, "",
               "The path to the file containing an initial guess at the scene.");
 
 
+// // Command line options.
+// DEFINE_uint64(psf_hw, 5, "The half-width of the PSF.");
+//
+// // CL argument validators.
+// static bool ValidateNonZero(const char* flagname, google::uint64 value) {
+//     if (value > 0) return true;
+//     printf("Invalid value for --%s: %d\n", flagname, (int)value);
+//     return false;
+// }
+// static const bool psf_hw_val = google::RegisterFlagValidator(&FLAGS_psf_hw,
+//                                                              &ValidateNonZero);
+
+
 int main(int argc, char **argv)
 {
     int psf_hw = 3, img_hw = 10, dim = 2 * img_hw + 1 + 2 * psf_hw;
